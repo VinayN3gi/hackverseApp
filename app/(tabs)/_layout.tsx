@@ -9,7 +9,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.light.tint, // 👈 always light
+        tabBarActiveTintColor: '#1d4ed8', // 👈 always light
         tabBarInactiveTintColor: Colors.light.tabIconDefault,
         tabBarStyle: {
           backgroundColor: Colors.light.background, // 👈 always light background
