@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   StyleSheet,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -32,66 +33,48 @@ const Header = () => (
   </View>
 );
 
-// CheckpointPanel (no fixed height)
-const CheckpointPanel = ({ checkpoints }: any) => {
-  return (
-    <View className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 mb-4">
-      <Text className="text-lg font-semibold text-gray-800 mb-3">My Checkpoints</Text>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled
-        keyboardShouldPersistTaps="handled"
-      >
-        {checkpoints.map((cp: any, index: number) => (
-          <View key={index} className="flex-row items-start relative mb-5">
-            {/* Connector line */}
-            {index !== checkpoints.length - 1 && (
-              <View
-                className={`absolute left-4 top-6 w-[2px] h-full ${
-                  cp.reached ? "bg-green-500" : "bg-gray-300"
-                }`}
-              />
-            )}
-            {/* Circle with number */}
+// Checkpoint Panel
+const CheckpointPanel = ({ checkpoints }: any) => (
+  <View className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 mb-4">
+    <Text className="text-lg font-semibold text-gray-800 mb-3">My Checkpoints</Text>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {checkpoints.map((cp: any, index: number) => (
+        <View key={index} className="flex-row items-start relative mb-5">
+          {index !== checkpoints.length - 1 && (
             <View
-              className={`w-8 h-8 rounded-full flex items-center justify-center z-10 ${
-                cp.reached ? "bg-green-500" : "bg-gray-400"
+              className={`absolute left-4 top-6 w-[2px] h-full ${
+                cp.reached ? "bg-green-500" : "bg-gray-300"
               }`}
-            >
-              <Text className="text-white font-bold text-xs">{index + 1}</Text>
-            </View>
-            {/* Label */}
-            <View className="ml-4">
-              <Text className={`${cp.reached ? "text-green-700" : "text-gray-900"} font-medium`}>
-                {cp.name}
-              </Text>
-              {cp.time && <Text className="text-sm text-gray-500">{cp.time}</Text>}
-            </View>
+            />
+          )}
+          <View
+            className={`w-8 h-8 rounded-full flex items-center justify-center z-10 ${
+              cp.reached ? "bg-green-500" : "bg-gray-400"
+            }`}
+          >
+            <Text className="text-white font-bold text-xs">{index + 1}</Text>
           </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-};
+          <View className="ml-4">
+            <Text className={`${cp.reached ? "text-green-700" : "text-gray-900"} font-medium`}>
+              {cp.name}
+            </Text>
+            {cp.time && <Text className="text-sm text-gray-500">{cp.time}</Text>}
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  </View>
+);
 
-// Chat response box (flexible)
-const ChatResponseBox = ({ response }: any) => {
-  return (
-    <View className="bg-blue-50 rounded-2xl shadow-md border border-blue-200 p-4 mb-4">
-      <Text className="text-lg font-semibold text-blue-700 mb-2">AI Assistant</Text>
-      <ScrollView style={{ maxHeight: 180 }} keyboardShouldPersistTaps="handled">
-        <Text className="text-gray-800 leading-relaxed">{response || "💡 Ask me anything about your journey..."}</Text>
-      </ScrollView>
-    </View>
-  );
-};
-
-// Chat input bar (pinned)
-const ChatInputBar = ({ onSend }: any) => {
+// Chat input bar pinned at bottom
+const ChatInputBar = ({ onSend, loading }: any) => {
   const [input, setInput] = useState("");
 
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
     onSend(input.trim());
     setInput("");
     Keyboard.dismiss();
@@ -105,69 +88,103 @@ const ChatInputBar = ({ onSend }: any) => {
         placeholder="Type your question..."
         returnKeyType="send"
         onSubmitEditing={handleSend}
+        editable={!loading}
         style={styles.textInput}
-        blurOnSubmit={false}
       />
-      <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-        <Text style={styles.sendButtonText}>Send</Text>
+      <TouchableOpacity
+        onPress={handleSend}
+        style={[styles.sendButton, loading && { backgroundColor: "#9ca3af" }]}
+        disabled={loading}
+      >
+        <Text style={styles.sendButtonText}>
+          {loading ? "Sending..." : "Send"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
 };
 
-// Main
+
+
 export default function DriverScreen() {
   const [response, setResponse] = useState("");
-
+  const [modalVisible, setModalVisible] = useState(false);
+  const [loading,setLoading]=useState(false)
   const handleSendPrompt = async (prompt: string) => {
-    try {
-      // Replace with your OpenAI API call
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer YOUR_API_KEY_HERE`,
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      const data = await res.json();
-      setResponse(data.choices?.[0]?.message?.content || "No response");
-    } catch (error) {
-      setResponse("❌ Error fetching response");
-    }
-  };
+  try {
+    setLoading(true);
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are a helpful AI assistant for a delivery driver." },
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
 
-  // keyboardVerticalOffset: tune this if header height or status bar different
+    const data = await res.json();
+    const answer = data.choices?.[0]?.message?.content || "No response received";
+
+    setResponse(answer);
+    setModalVisible(true);
+  } catch (error) {
+    console.error(error);
+    setResponse("Error fetching response");
+    setModalVisible(true);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   const keyboardVerticalOffset = Platform.OS === "ios" ? 90 : 80;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
-      {/* Tapping outside the keyboard will close it */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
           keyboardVerticalOffset={keyboardVerticalOffset}
         >
-          {/* Scrollable content (header + panels) */}
-          <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
-            keyboardShouldPersistTaps="handled"
-          >
+          <View style={{ flex: 1, padding: 16 }}>
             <Header />
             <CheckpointPanel checkpoints={checkpoints} />
-            <ChatResponseBox response={response} />
-          </ScrollView>
 
-          {/* Input pinned to bottom */}
-          <View style={{ padding: 16, backgroundColor: "transparent" }}>
-            <ChatInputBar onSend={handleSendPrompt} />
+            {/* Input pinned to bottom */}
+            <ChatInputBar onSend={handleSendPrompt} loading={loading} />
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
+
+      {/* Modal for AI Answer */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>AI Assistant</Text>
+            <ScrollView style={{ maxHeight: 300 }}>
+              <Text style={styles.modalText}>{response}</Text>
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -187,6 +204,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 6,
     elevation: 3,
+    marginTop: 8,
   },
   textInput: {
     flex: 1,
@@ -204,5 +222,43 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalBox: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 20,
+    width: "100%",
+    maxHeight: "80%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1d4ed8",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  modalText: {
+    fontSize: 16,
+    color: "#111827",
+    lineHeight: 22,
+  },
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: "#2563eb",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
   },
 });

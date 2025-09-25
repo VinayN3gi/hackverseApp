@@ -1,12 +1,157 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+'use client'
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  StyleSheet,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
-const explore = () => {
+// Dummy previous safety concerns
+const initialConcerns = [
+  { id: 1, title: 'Fuel Leak Detected', time: '10:45 AM' },
+  { id: 2, title: 'Tire Pressure Low', time: '09:20 AM' },
+];
+
+// Header
+const Header = () => (
+  <View className="w-full bg-blue-700 py-4 rounded-lg shadow mb-4">
+    <Text className="text-center text-2xl font-bold text-white">Safety Dashboard</Text>
+    <Text className="text-center text-sm text-blue-100">
+      Review and raise safety concerns during your journey
+    </Text>
+  </View>
+);
+
+// Component to show list of concerns
+const ConcernList = ({ concerns }: any) => (
+  <View className="bg-white rounded-2xl shadow-lg border border-gray-200 flex-1 p-4 mb-4">
+    <Text className="text-lg font-semibold text-gray-800 mb-3">My Safety Concerns</Text>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: 16 }}
+      showsVerticalScrollIndicator={true}
+    >
+      {concerns.map((c: any) => (
+        <View
+          key={c.id}
+          className="flex-row items-center mb-4 bg-blue-50 rounded-xl p-3"
+        >
+          <Ionicons
+            name="shield-checkmark"
+            size={24}
+            color="#dc2626" // always red
+            style={{ marginRight: 10 }}
+          />
+          <View className="flex-1">
+            <Text className="font-medium text-gray-900">{c.title}</Text>
+            <Text className="text-xs text-gray-500">Reported at {c.time}</Text>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  </View>
+);
+
+// Form to raise a new concern
+const RaiseConcernForm = ({ onSubmit }: any) => {
+  const [input, setInput] = useState('');
+
+  const handleSubmit = () => {
+    if (!input.trim()) return;
+    onSubmit(input.trim());
+    setInput('');
+    Keyboard.dismiss();
+  };
+
   return (
-    <View>
-      <Text>explore</Text>
+    <View className="bg-blue-50 rounded-2xl shadow-md border border-blue-200 p-4 mb-4">
+      <Text className="text-lg font-semibold text-blue-700 mb-2">Raise New Concern</Text>
+      <TextInput
+        placeholder="Describe the safety issue..."
+        value={input}
+        onChangeText={setInput}
+        multiline
+        style={styles.textArea}
+      />
+      <TouchableOpacity onPress={handleSubmit} style={styles.raiseButton}>
+        <Text style={styles.raiseButtonText}>Submit Concern</Text>
+      </TouchableOpacity>
     </View>
-  )
+  );
+};
+
+// Main Safety Screen
+export default function SafetyScreen() {
+  const [concerns, setConcerns] = useState(initialConcerns);
+
+  const formatTime = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date);
+  };
+
+  const handleNewConcern = (text: string) => {
+    const newConcern = {
+      id: concerns.length + 1,
+      title: text,
+      time: formatTime(new Date()), // nicely formatted
+    };
+    setConcerns([newConcern, ...concerns]);
+  };
+
+  const keyboardVerticalOffset = Platform.OS === 'ios' ? 90 : 80;
+
+  return (
+    <SafeAreaView className="flex-1 bg-gray-100">
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={keyboardVerticalOffset}
+        >
+          <View style={{ flex: 1, padding: 16 }}>
+            <Header />
+            <ConcernList concerns={concerns} />
+            <RaiseConcernForm onSubmit={handleNewConcern} />
+          </View>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
+    </SafeAreaView>
+  );
 }
 
-export default explore
+const styles = StyleSheet.create({
+  textArea: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    padding: 12,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  raiseButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  raiseButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+});

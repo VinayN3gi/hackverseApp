@@ -4,15 +4,17 @@ import React from 'react';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#1d4ed8', // 👈 always light
+        tabBarActiveTintColor: '#1d4ed8', 
         tabBarInactiveTintColor: Colors.light.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: Colors.light.background, // 👈 always light background
+          backgroundColor: Colors.light.background,
         },
         headerShown: false,
         tabBarButton: HapticTab,
@@ -30,9 +32,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: 'Safety',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+             <Ionicons name="shield-checkmark" size={28} color={color} />
           ),
         }}
       />
