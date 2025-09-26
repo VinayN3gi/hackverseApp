@@ -154,11 +154,11 @@ export default function DriverScreen() {
 
   const sendNotif = () => {
     async function sendCheckpoint() {
-      let ngrokUrl = "https://3dc625cc30e7.ngrok-free.app";
+      let ngrokUrl = "https://b253e9f9b998.ngrok-free.app";
       await fetch(`${ngrokUrl}/api/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Reached Checkpoint 1" }),
+        body: JSON.stringify({ message: "Reached Checkpoint 2" }),
       });
     }
     sendCheckpoint();
