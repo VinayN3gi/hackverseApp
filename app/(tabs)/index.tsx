@@ -1,5 +1,5 @@
-"use client";
-import React, { useState } from "react";
+'use client'
+import React, { useState, useEffect } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -13,9 +13,9 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Dummy checkpoint data for one driver
+// Dummy checkpoint data
 const checkpoints = [
   { name: "Depot", reached: true, time: "09:00 AM" },
   { name: "Highway Checkpoint", reached: true, time: "11:15 AM" },
@@ -63,7 +63,9 @@ const CheckpointPanel = ({ checkpoints }: any) => (
           </View>
           <View className="ml-4">
             <Text
-              className={`${cp.reached ? "text-green-700" : "text-gray-900"} font-medium`}
+              className={`${
+                cp.reached ? "text-green-700" : "text-gray-900"
+              } font-medium`}
             >
               {cp.name}
             </Text>
@@ -77,7 +79,7 @@ const CheckpointPanel = ({ checkpoints }: any) => (
   </View>
 );
 
-// Chat input bar pinned at bottom
+// Chat input bar
 const ChatInputBar = ({ onSend, loading }: any) => {
   const [input, setInput] = useState("");
 
@@ -89,22 +91,26 @@ const ChatInputBar = ({ onSend, loading }: any) => {
   };
 
   return (
-    <View style={styles.inputWrapper}>
+    <View className="flex-row items-center bg-white border border-gray-200 rounded-3xl px-3 py-2 shadow shadow-black/5 mt-3">
       <TextInput
         value={input}
         onChangeText={setInput}
         placeholder="Type your question..."
+        placeholderTextColor="#9ca3af"
         returnKeyType="send"
         onSubmitEditing={handleSend}
         editable={!loading}
-        style={styles.textInput}
+        className="flex-1 text-base text-gray-900 px-2"
       />
+
       <TouchableOpacity
         onPress={handleSend}
-        style={[styles.sendButton, loading && { backgroundColor: "#9ca3af" }]}
         disabled={loading}
+        className={`ml-2 px-5 py-3 rounded-2xl ${
+          loading ? "bg-gray-400" : "bg-blue-600 active:bg-blue-700"
+        }`}
       >
-        <Text style={styles.sendButtonText}>
+        <Text className="text-white font-bold">
           {loading ? "Sending..." : "Send"}
         </Text>
       </TouchableOpacity>
@@ -116,6 +122,23 @@ export default function DriverScreen() {
   const [response, setResponse] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  // Listen for keyboard show/hide
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () =>
+      setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   const handleSendPrompt = async (prompt: string) => {
     try {
       setLoading(true);
@@ -160,30 +183,38 @@ export default function DriverScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: "Reached Checkpoint 2" }),
       });
+      console.log("Message sent");
     }
     sendCheckpoint();
   };
-
-  const keyboardVerticalOffset = Platform.OS === "ios" ? 90 : 80;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
-          keyboardVerticalOffset={keyboardVerticalOffset}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={insets.bottom}
         >
-          <View style={{ flex: 1, padding: 16 }}>
+          <View className="flex-1 px-4">
             <Header />
             <CheckpointPanel checkpoints={checkpoints} />
 
-            <TouchableOpacity onPress={sendNotif} style={styles.sendButton}>
-              <Text style={styles.sendButtonText}>Reached Checkpoint</Text>
-            </TouchableOpacity>
+            {/* Show only when keyboard is NOT visible */}
+            {!isKeyboardVisible && (
+              <TouchableOpacity
+                onPress={sendNotif}
+                className="w-full bg-green-600 py-4 mb-6 rounded-2xl flex-row items-center justify-center shadow shadow-black/10 active:bg-green-700"
+              >
+                <Text className="text-white text-lg font-bold">
+                  Reached Checkpoint
+                </Text>
+              </TouchableOpacity>
+            )}
 
-            {/* Input pinned to bottom */}
-            <ChatInputBar onSend={handleSendPrompt} loading={loading} />
+            <View className="mt-auto mb-2">
+              <ChatInputBar onSend={handleSendPrompt} loading={loading} />
+            </View>
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
@@ -215,39 +246,6 @@ export default function DriverScreen() {
 }
 
 const styles = StyleSheet.create({
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
-    marginTop: 8,
-  },
-  textInput: {
-    flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    color: "#111827",
-  },
-  sendButton: {
-    marginLeft: 8,
-    backgroundColor: "#2563eb",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  sendButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
