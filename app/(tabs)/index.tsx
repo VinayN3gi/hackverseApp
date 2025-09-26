@@ -1,5 +1,6 @@
 'use client'
-import React, { useState, useEffect } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -14,7 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const checkpoints = [
@@ -200,7 +200,7 @@ const handleSendPrompt = async (prompt: string) => {
 
   const sendNotif = () => {
     async function sendCheckpoint() {
-      let ngrokUrl = "https://b253e9f9b998.ngrok-free.app";
+      let ngrokUrl = "https://13abbe524128.ngrok-free.app";
       await fetch(`${ngrokUrl}/api/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

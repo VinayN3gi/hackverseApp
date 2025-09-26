@@ -1,5 +1,5 @@
-'use client'
-import React, { useState } from 'react';
+"use client";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,20 +11,22 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   StyleSheet,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 // Dummy previous safety concerns
 const initialConcerns = [
-  { id: 1, title: 'Fuel Leak Detected', time: '10:45 AM' },
-  { id: 2, title: 'Tire Pressure Low', time: '09:20 AM' },
+  { id: 1, title: "Fuel Leak Detected", time: "10:45 AM" },
+  { id: 2, title: "Tire Pressure Low", time: "09:20 AM" },
 ];
 
 // Header
 const Header = () => (
   <View className="w-full bg-blue-700 py-4 rounded-lg shadow mb-4">
-    <Text className="text-center text-2xl font-bold text-white">Safety Dashboard</Text>
+    <Text className="text-center text-2xl font-bold text-white">
+      Safety Dashboard
+    </Text>
     <Text className="text-center text-sm text-blue-100">
       Review and raise safety concerns during your journey
     </Text>
@@ -34,7 +36,9 @@ const Header = () => (
 // Component to show list of concerns
 const ConcernList = ({ concerns }: any) => (
   <View className="bg-white rounded-2xl shadow-lg border border-gray-200 flex-1 p-4 mb-4">
-    <Text className="text-lg font-semibold text-gray-800 mb-3">My Safety Concerns</Text>
+    <Text className="text-lg font-semibold text-gray-800 mb-3">
+      My Safety Concerns
+    </Text>
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 16 }}
@@ -63,18 +67,20 @@ const ConcernList = ({ concerns }: any) => (
 
 // Form to raise a new concern
 const RaiseConcernForm = ({ onSubmit }: any) => {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
 
   const handleSubmit = () => {
     if (!input.trim()) return;
     onSubmit(input.trim());
-    setInput('');
+    setInput("");
     Keyboard.dismiss();
   };
 
   return (
     <View className="bg-blue-50 rounded-2xl shadow-md border border-blue-200 p-4 mb-4">
-      <Text className="text-lg font-semibold text-blue-700 mb-2">Raise New Concern</Text>
+      <Text className="text-lg font-semibold text-blue-700 mb-2">
+        Raise New Concern
+      </Text>
       <TextInput
         placeholder="Describe the safety issue..."
         value={input}
@@ -94,14 +100,26 @@ export default function SafetyScreen() {
   const [concerns, setConcerns] = useState(initialConcerns);
 
   const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     }).format(date);
   };
 
+  async function sendConcern(text: string) {
+    let ngrokUrl = "https://13abbe524128.ngrok-free.app";
+    await fetch(`${ngrokUrl}/api/concern`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text }),
+    });
+    console.log("Concern sent");
+  }
+
   const handleNewConcern = (text: string) => {
+    sendConcern(text);
+
     const newConcern = {
       id: concerns.length + 1,
       title: text,
@@ -110,13 +128,13 @@ export default function SafetyScreen() {
     setConcerns([newConcern, ...concerns]);
   };
 
-  const keyboardVerticalOffset = Platform.OS === 'ios' ? 90 : 80;
+  const keyboardVerticalOffset = Platform.OS === "ios" ? 90 : 80;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
           keyboardVerticalOffset={keyboardVerticalOffset}
         >
@@ -133,25 +151,25 @@ export default function SafetyScreen() {
 
 const styles = StyleSheet.create({
   textArea: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: "#d1d5db",
     padding: 12,
     minHeight: 80,
-    textAlignVertical: 'top',
-    color: '#111827',
+    textAlignVertical: "top",
+    color: "#111827",
     marginBottom: 12,
   },
   raiseButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: "#2563eb",
     paddingVertical: 12,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   raiseButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 16,
   },
 });
