@@ -29,12 +29,24 @@ export default function TabLayout() {
           ),
         }}
       />
+
+
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Safety',
           tabBarIcon: ({ color }) => (
              <Ionicons name="shield-checkmark" size={28} color={color} />
+          ),
+        }}
+      />
+
+       <Tabs.Screen
+        name="history" 
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="time" size={28} color={color} />
           ),
         }}
       />
