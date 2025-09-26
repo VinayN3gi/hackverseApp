@@ -14,8 +14,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Dummy checkpoint data
+
 const checkpoints = [
   { name: "Depot", reached: true, time: "09:00 AM" },
   { name: "Highway Checkpoint", reached: true, time: "11:15 AM" },
@@ -139,41 +140,63 @@ export default function DriverScreen() {
     };
   }, []);
 
-  const handleSendPrompt = async (prompt: string) => {
-    try {
-      setLoading(true);
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [
-            {
-              role: "system",
-              content: "You are a helpful AI assistant for a delivery driver.",
-            },
-            { role: "user", content: prompt },
-          ],
-        }),
-      });
+const handleSendPrompt = async (prompt: string) => {
+  try {
+    setLoading(true);
 
-      const data = await res.json();
-      const answer =
-        data.choices?.[0]?.message?.content || "No response received";
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful AI assistant for a delivery driver.",
+          },
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
 
-      setResponse(answer);
-      setModalVisible(true);
-    } catch (error) {
-      console.error(error);
-      setResponse("Error fetching response");
-      setModalVisible(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const data = await res.json();
+    const answer =
+      data.choices?.[0]?.message?.content || "No response received";
+
+    // Save to state
+    setResponse(answer);
+    setModalVisible(true);
+
+    // Cache the conversation locally
+    const newMessage = {
+      id: Date.now(), // or uuid
+      prompt,
+      answer,
+      timestamp: new Date().toISOString(),
+    };
+
+    // get existing history
+    const existingHistory = await AsyncStorage.getItem('chatHistory');
+    const parsedHistory = existingHistory ? JSON.parse(existingHistory) : [];
+
+    // add new message to history
+    const updatedHistory = [...parsedHistory, newMessage];
+
+    // store back
+    await AsyncStorage.setItem('chatHistory', JSON.stringify(updatedHistory));
+
+  } catch (error) {
+    console.error(error);
+    setResponse("Error fetching response");
+    setModalVisible(true);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const sendNotif = () => {
     async function sendCheckpoint() {
