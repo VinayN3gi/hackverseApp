@@ -1,17 +1,17 @@
-'use client'
+"use client";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
   Keyboard,
-  StyleSheet,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,7 +26,9 @@ const checkpoints = [
 // Header
 const Header = () => (
   <View className="w-full bg-blue-700 py-4 rounded-lg shadow mb-4">
-    <Text className="text-center text-2xl font-bold text-white">Driver Dashboard</Text>
+    <Text className="text-center text-2xl font-bold text-white">
+      Driver Dashboard
+    </Text>
     <Text className="text-center text-sm text-blue-100">
       Track your journey and ask AI for assistance
     </Text>
@@ -36,7 +38,9 @@ const Header = () => (
 // Checkpoint Panel
 const CheckpointPanel = ({ checkpoints }: any) => (
   <View className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 mb-4">
-    <Text className="text-lg font-semibold text-gray-800 mb-3">My Checkpoints</Text>
+    <Text className="text-lg font-semibold text-gray-800 mb-3">
+      My Checkpoints
+    </Text>
     <ScrollView
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
@@ -58,10 +62,14 @@ const CheckpointPanel = ({ checkpoints }: any) => (
             <Text className="text-white font-bold text-xs">{index + 1}</Text>
           </View>
           <View className="ml-4">
-            <Text className={`${cp.reached ? "text-green-700" : "text-gray-900"} font-medium`}>
+            <Text
+              className={`${cp.reached ? "text-green-700" : "text-gray-900"} font-medium`}
+            >
               {cp.name}
             </Text>
-            {cp.time && <Text className="text-sm text-gray-500">{cp.time}</Text>}
+            {cp.time && (
+              <Text className="text-sm text-gray-500">{cp.time}</Text>
+            )}
           </View>
         </View>
       ))}
@@ -104,44 +112,57 @@ const ChatInputBar = ({ onSend, loading }: any) => {
   );
 };
 
-
-
 export default function DriverScreen() {
   const [response, setResponse] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [loading,setLoading]=useState(false)
+  const [loading, setLoading] = useState(false);
   const handleSendPrompt = async (prompt: string) => {
-  try {
-    setLoading(true);
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: "You are a helpful AI assistant for a delivery driver." },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
+    try {
+      setLoading(true);
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful AI assistant for a delivery driver.",
+            },
+            { role: "user", content: prompt },
+          ],
+        }),
+      });
 
-    const data = await res.json();
-    const answer = data.choices?.[0]?.message?.content || "No response received";
+      const data = await res.json();
+      const answer =
+        data.choices?.[0]?.message?.content || "No response received";
 
-    setResponse(answer);
-    setModalVisible(true);
-  } catch (error) {
-    console.error(error);
-    setResponse("Error fetching response");
-    setModalVisible(true);
-  } finally {
-    setLoading(false);
-  }
-};
+      setResponse(answer);
+      setModalVisible(true);
+    } catch (error) {
+      console.error(error);
+      setResponse("Error fetching response");
+      setModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const sendNotif = () => {
+    async function sendCheckpoint() {
+      let ngrokUrl = "https://3dc625cc30e7.ngrok-free.app";
+      await fetch(`${ngrokUrl}/api/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Reached Checkpoint 1" }),
+      });
+    }
+    sendCheckpoint();
+  };
 
   const keyboardVerticalOffset = Platform.OS === "ios" ? 90 : 80;
 
@@ -156,6 +177,10 @@ export default function DriverScreen() {
           <View style={{ flex: 1, padding: 16 }}>
             <Header />
             <CheckpointPanel checkpoints={checkpoints} />
+
+            <TouchableOpacity onPress={sendNotif} style={styles.sendButton}>
+              <Text style={styles.sendButtonText}>Reached Checkpoint</Text>
+            </TouchableOpacity>
 
             {/* Input pinned to bottom */}
             <ChatInputBar onSend={handleSendPrompt} loading={loading} />
