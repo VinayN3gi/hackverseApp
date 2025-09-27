@@ -238,8 +238,6 @@ Always use this context when answering questions.`,
 
 
   const sendNotif = async () => {
-    let ngrokUrl = process.env.EXPO_PUBLIC_NGROK_URL;
-
     let nextCp;
     let toChange = 0;
     let newCps = [...checkpoints];

@@ -1,19 +1,22 @@
 "use client";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
+  ScrollView,
   StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 
 // Dummy previous safety concerns
 const initialConcerns = [
@@ -28,7 +31,7 @@ const Header = () => (
       Safety Dashboard
     </Text>
     <Text className="text-center text-sm text-blue-100">
-      Review and raise safety concerns during your journey      
+      Review and raise safety concerns during your journey
     </Text>
   </View>
 );
@@ -108,13 +111,20 @@ export default function SafetyScreen() {
   };
 
   async function sendConcern(text: string) {
-    let ngrokUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+    await addDoc(collection(db, "notifications"), {
+      driverID: "YdS7cEgFv6We3ziFoVQu",
+      text: text,
+      createdAt: serverTimestamp(),
+      type: "concern",
+    });
+
+    /*let ngrokUrl = process.env.EXPO_PUBLIC_NGROK_URL;
     await fetch(`${ngrokUrl}/api/concern`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: `Ramesh: ${text}` }),
     });
-    console.log("Concern sent");
+    console.log("Concern sent");*/
   }
 
   const handleNewConcern = (text: string) => {
