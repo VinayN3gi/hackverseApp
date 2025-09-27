@@ -58,6 +58,10 @@ export default function HistoryScreen() {
     setModalVisible(true);
   };
 
+  const clearHistory = () => {
+    AsyncStorage.removeItem("chatHistory");
+  };
+
   const keyboardVerticalOffset = Platform.OS === "ios" ? 90 : 80;
 
   return (
@@ -70,6 +74,19 @@ export default function HistoryScreen() {
         >
           <View style={{ flex: 1, padding: 16 }}>
             <Header />
+
+            <TouchableOpacity
+              onPress={clearHistory}
+              style={{
+                width: "100%",
+                padding: 7,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "flex-end",
+              }}
+            >
+              <Text>Clear</Text>
+            </TouchableOpacity>
 
             {/* List */}
             <View style={styles.card}>

@@ -132,7 +132,7 @@ export default function DriverScreen() {
   ]);
 
   const insets = useSafeAreaInsets();
-   const cargoInfo = `
+  const cargoInfo = `
       Cargo ID: CARGO-8723
       Description: Premium Petroleum Barrels
       Weight: 12,500 kg
@@ -155,21 +155,21 @@ export default function DriverScreen() {
     };
   }, []);
 
- const handleSendPrompt = async (prompt: string) => {
-  try {
-    setLoading(true);
+  const handleSendPrompt = async (prompt: string) => {
+    try {
+      setLoading(true);
 
-    // 1️⃣ Load existing chat history
-    const existingHistory = await AsyncStorage.getItem("chatHistory");
-    const parsedHistory = existingHistory ? JSON.parse(existingHistory) : [];
+      // 1️⃣ Load existing chat history
+      const existingHistory = await AsyncStorage.getItem("chatHistory");
+      const parsedHistory = existingHistory ? JSON.parse(existingHistory) : [];
 
-    const previousMessages = parsedHistory.flatMap((m: any) => [
-      { role: "user", content: m.prompt },
-      { role: "assistant", content: m.answer },
-    ]);
+      const previousMessages = parsedHistory.flatMap((m: any) => [
+        { role: "user", content: m.prompt },
+        { role: "assistant", content: m.answer },
+      ]);
 
-    // 2️⃣ Add local data (cargo info + checkpoints) as context
-    const localData = `
+      // 2️⃣ Add local data (cargo info + checkpoints) as context
+      const localData = `
 Cargo Information:
 ${cargoInfo}
 
@@ -184,58 +184,57 @@ ${checkpoints
   .join("\n")}
     `;
 
-    // 3️⃣ Build full message set
-    const messages = [
-      {
-        role: "system",
-        content: `You are a helpful AI assistant for a delivery driver.
+      // 3️⃣ Build full message set
+      const messages = [
+        {
+          role: "system",
+          content: `You are a helpful AI assistant for a delivery driver.
 You have access to the following locally stored information:
 ${localData}
 Always use this context when answering questions.`,
-      },
-      ...previousMessages,
-      { role: "user", content: prompt },
-    ];
+        },
+        ...previousMessages,
+        { role: "user", content: prompt },
+      ];
 
-    // 4️⃣ Call OpenAI API
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages,
-      }),
-    });
+      // 4️⃣ Call OpenAI API
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages,
+        }),
+      });
 
-    const data = await res.json();
-    const answer =
-      data.choices?.[0]?.message?.content || "No response received";
+      const data = await res.json();
+      const answer =
+        data.choices?.[0]?.message?.content || "No response received";
 
-    // 5️⃣ Show in modal
-    setResponse(answer);
-    setModalVisible(true);
+      // 5️⃣ Show in modal
+      setResponse(answer);
+      setModalVisible(true);
 
-    // 6️⃣ Save back into history
-    const newMessage = {
-      id: Date.now(),
-      prompt,
-      answer,
-      timestamp: new Date().toISOString(),
-    };
-    const updatedHistory = [...parsedHistory, newMessage];
-    await AsyncStorage.setItem("chatHistory", JSON.stringify(updatedHistory));
-  } catch (error) {
-    console.error(error);
-    setResponse("Error fetching response");
-    setModalVisible(true);
-  } finally {
-    setLoading(false);
-  }
-};
-
+      // 6️⃣ Save back into history
+      const newMessage = {
+        id: Date.now(),
+        prompt,
+        answer,
+        timestamp: new Date().toISOString(),
+      };
+      const updatedHistory = [...parsedHistory, newMessage];
+      await AsyncStorage.setItem("chatHistory", JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error(error);
+      setResponse("Error fetching response");
+      setModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const sendNotif = async () => {
     let nextCp;
@@ -250,12 +249,6 @@ Always use this context when answering questions.`,
       }
     }
 
-    /*await fetch(`${ngrokUrl}/api/message`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: `Reached ${nextCp}` }),
-    });*/
-
     await addDoc(collection(db, "notifications"), {
       driverID: "YdS7cEgFv6We3ziFoVQu",
       text: `Reached ${nextCp}`,
@@ -266,7 +259,6 @@ Always use this context when answering questions.`,
     newCps[toChange].reached = true;
     setCheckpoints(newCps);
   };
-//                disabled={checkpoints[checkpoints.length - 1].reached}
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
@@ -283,15 +275,15 @@ Always use this context when answering questions.`,
             {/* Show only when keyboard is NOT visible */}
             {!isKeyboardVisible && (
               <>
-              <TouchableOpacity
-                onPress={sendNotif}
-                className="w-full bg-green-600 py-4 mb-6 rounded-2xl flex-row items-center justify-center shadow shadow-black/10 active:bg-green-700 disabled:bg-gray-400"
-              >
-                <Text className="text-white text-lg font-bold">
-                  Reached Checkpoint
-                </Text>
-              </TouchableOpacity>
-               <TouchableOpacity
+                <TouchableOpacity
+                  onPress={sendNotif}
+                  className="w-full bg-green-600 py-4 mb-6 rounded-2xl flex-row items-center justify-center shadow shadow-black/10 active:bg-green-700 disabled:bg-gray-400"
+                >
+                  <Text className="text-white text-lg font-bold">
+                    Reached Checkpoint
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   onPress={() => setCargoModalVisible(true)}
                   className="w-full bg-yellow-600 py-4 mb-6 rounded-2xl flex-row items-center justify-center shadow shadow-black/10 active:bg-yellow-700"
                 >
@@ -299,10 +291,7 @@ Always use this context when answering questions.`,
                     Cargo Information
                   </Text>
                 </TouchableOpacity>
-              
               </>
-
-
             )}
 
             <View className="mt-auto mb-2">
@@ -335,53 +324,52 @@ Always use this context when answering questions.`,
         </View>
       </Modal>
 
-     <Modal
-  visible={cargoModalVisible}
-  transparent
-  animationType="slide"
-  onRequestClose={() => setCargoModalVisible(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.cargoBox}>
-      {/* Header */}
-      <View style={styles.cargoHeader}>
-        <Text style={styles.cargoTitle}>Cargo Information</Text>
-        <TouchableOpacity onPress={() => setCargoModalVisible(false)}>
-          <Text style={styles.cargoClose}>✕</Text>
-        </TouchableOpacity>
-      </View>
-        <ScrollView
-        style={styles.cargoScroll}
-        showsVerticalScrollIndicator={false}
+      <Modal
+        visible={cargoModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCargoModalVisible(false)}
       >
-        {cargoInfo
-          .trim()
-          .split("\n")
-          .filter(Boolean)
-          .map((line, idx) => {
-            const [rawLabel, ...rest] = line.split(":");
-            const label = (rawLabel || "").trim();
-            const value = (rest.join(":") || "").trim();
+        <View style={styles.modalOverlay}>
+          <View style={styles.cargoBox}>
+            {/* Header */}
+            <View style={styles.cargoHeader}>
+              <Text style={styles.cargoTitle}>Cargo Information</Text>
+              <TouchableOpacity onPress={() => setCargoModalVisible(false)}>
+                <Text style={styles.cargoClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              style={styles.cargoScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              {cargoInfo
+                .trim()
+                .split("\n")
+                .filter(Boolean)
+                .map((line, idx) => {
+                  const [rawLabel, ...rest] = line.split(":");
+                  const label = (rawLabel || "").trim();
+                  const value = (rest.join(":") || "").trim();
 
-            return (
-              <View key={idx} style={styles.cargoRow}>
-                {/* both pieces are inside Text */}
-                <Text style={styles.cargoLabel}>{label}</Text>
-                <Text style={styles.cargoValue}>{value}</Text>
-              </View>
-            );
-          })}
-      </ScrollView>
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={() => setCargoModalVisible(false)}
-      >
-        <Text style={styles.closeButtonText}>Close</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
+                  return (
+                    <View key={idx} style={styles.cargoRow}>
+                      {/* both pieces are inside Text */}
+                      <Text style={styles.cargoLabel}>{label}</Text>
+                      <Text style={styles.cargoValue}>{value}</Text>
+                    </View>
+                  );
+                })}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setCargoModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -471,27 +459,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   cargoRow: {
-  flexDirection: "row",
-  alignItems: "flex-start",
-  backgroundColor: "#ffffff",
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: "#e5e7eb",
-  paddingVertical: 10,
-  paddingHorizontal: 12,
-  marginBottom: 8,
-},
-cargoLabel: {
-  width: 150,              // fixed width for perfect alignment
-  fontSize: 14,
-  color: "#6b7280",
-  fontWeight: "600",
-  paddingRight: 8,
-},
-cargoValue: {
-  flex: 1,                 // value wraps but stays aligned
-  fontSize: 16,
-  color: "#111827",
-  lineHeight: 22,
-},
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  cargoLabel: {
+    width: 150, // fixed width for perfect alignment
+    fontSize: 14,
+    color: "#6b7280",
+    fontWeight: "600",
+    paddingRight: 8,
+  },
+  cargoValue: {
+    flex: 1, // value wraps but stays aligned
+    fontSize: 16,
+    color: "#111827",
+    lineHeight: 22,
+  },
 });

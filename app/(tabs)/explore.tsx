@@ -117,14 +117,6 @@ export default function SafetyScreen() {
       createdAt: serverTimestamp(),
       type: "concern",
     });
-
-    /*let ngrokUrl = process.env.EXPO_PUBLIC_NGROK_URL;
-    await fetch(`${ngrokUrl}/api/concern`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: `Ramesh: ${text}` }),
-    });
-    console.log("Concern sent");*/
   }
 
   const handleNewConcern = (text: string) => {
