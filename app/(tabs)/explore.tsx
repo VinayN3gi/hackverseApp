@@ -28,7 +28,7 @@ const Header = () => (
       Safety Dashboard
     </Text>
     <Text className="text-center text-sm text-blue-100">
-      Review and raise safety concerns during your journey
+      Review and raise safety concerns during your journey      
     </Text>
   </View>
 );
@@ -108,11 +108,11 @@ export default function SafetyScreen() {
   };
 
   async function sendConcern(text: string) {
-    let ngrokUrl = "https://13abbe524128.ngrok-free.app";
+    let ngrokUrl = process.env.EXPO_PUBLIC_NGROK_URL;
     await fetch(`${ngrokUrl}/api/concern`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: `Ramesh: ${text}` }),
     });
     console.log("Concern sent");
   }

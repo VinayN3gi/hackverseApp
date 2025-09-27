@@ -1,5 +1,5 @@
-'use client'
-import AsyncStorage from '@react-native-async-storage/async-storage';
+"use client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
   Keyboard,
@@ -14,15 +14,13 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-
-const checkpoints = [
-  { name: "Depot", reached: true, time: "09:00 AM" },
-  { name: "Highway Checkpoint", reached: true, time: "11:15 AM" },
-  { name: "City Storage Yard", reached: false, time: null },
-  { name: "Petroleum Plant", reached: false, time: null },
-];
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 
 // Header
 const Header = () => (
@@ -124,6 +122,14 @@ export default function DriverScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  const [checkpoints, setCheckpoints] = useState([
+    { name: "Depot", reached: true, time: "07:00 PM" },
+    { name: "Quality Control Checkpoint", reached: false, time: null },
+    { name: "City Storage Yard", reached: false, time: null },
+    { name: "Petroleum Plant", reached: false, time: null },
+  ]);
+
   const insets = useSafeAreaInsets();
 
   // Listen for keyboard show/hide
@@ -140,76 +146,94 @@ export default function DriverScreen() {
     };
   }, []);
 
-const handleSendPrompt = async (prompt: string) => {
-  try {
-    setLoading(true);
+  const handleSendPrompt = async (prompt: string) => {
+    try {
+      setLoading(true);
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful AI assistant for a delivery driver.",
+            },
+            { role: "user", content: prompt },
+          ],
+        }),
+      });
+
+      const data = await res.json();
+      const answer =
+        data.choices?.[0]?.message?.content || "No response received";
+
+      // Save to state
+      setResponse(answer);
+      setModalVisible(true);
+
+      // Cache the conversation locally
+      const newMessage = {
+        id: Date.now(), // or uuid
+        prompt,
+        answer,
+        timestamp: new Date().toISOString(),
+      };
+
+      // get existing history
+      const existingHistory = await AsyncStorage.getItem("chatHistory");
+      const parsedHistory = existingHistory ? JSON.parse(existingHistory) : [];
+
+      // add new message to history
+      const updatedHistory = [...parsedHistory, newMessage];
+
+      // store back
+      await AsyncStorage.setItem("chatHistory", JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error(error);
+      setResponse("Error fetching response");
+      setModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendNotif = async () => {
+    let ngrokUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+
+    let nextCp;
+    let toChange = 0;
+    let newCps = [...checkpoints];
+
+    for (let [idx, i] of checkpoints.entries()) {
+      if (i.reached === false) {
+        nextCp = i.name;
+        toChange = idx;
+        break;
+      }
+    }
+
+    /*await fetch(`${ngrokUrl}/api/message`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful AI assistant for a delivery driver.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: `Reached ${nextCp}` }),
+    });*/
+
+    await addDoc(collection(db, "notifications"), {
+      driverID: "YdS7cEgFv6We3ziFoVQu",
+      text: `Reached ${nextCp}`,
+      createdAt: serverTimestamp(),
+      type: "checkpoint",
     });
 
-    const data = await res.json();
-    const answer =
-      data.choices?.[0]?.message?.content || "No response received";
-
-    // Save to state
-    setResponse(answer);
-    setModalVisible(true);
-
-    // Cache the conversation locally
-    const newMessage = {
-      id: Date.now(), // or uuid
-      prompt,
-      answer,
-      timestamp: new Date().toISOString(),
-    };
-
-    // get existing history
-    const existingHistory = await AsyncStorage.getItem('chatHistory');
-    const parsedHistory = existingHistory ? JSON.parse(existingHistory) : [];
-
-    // add new message to history
-    const updatedHistory = [...parsedHistory, newMessage];
-
-    // store back
-    await AsyncStorage.setItem('chatHistory', JSON.stringify(updatedHistory));
-
-  } catch (error) {
-    console.error(error);
-    setResponse("Error fetching response");
-    setModalVisible(true);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  const sendNotif = () => {
-    async function sendCheckpoint() {
-      let ngrokUrl = "https://13abbe524128.ngrok-free.app";
-      await fetch(`${ngrokUrl}/api/message`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Reached Checkpoint 2" }),
-      });
-      console.log("Message sent");
-    }
-    sendCheckpoint();
+    newCps[toChange].reached = true;
+    setCheckpoints(newCps);
   };
+//                disabled={checkpoints[checkpoints.length - 1].reached}
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
@@ -227,7 +251,7 @@ const handleSendPrompt = async (prompt: string) => {
             {!isKeyboardVisible && (
               <TouchableOpacity
                 onPress={sendNotif}
-                className="w-full bg-green-600 py-4 mb-6 rounded-2xl flex-row items-center justify-center shadow shadow-black/10 active:bg-green-700"
+                className="w-full bg-green-600 py-4 mb-6 rounded-2xl flex-row items-center justify-center shadow shadow-black/10 active:bg-green-700 disabled:bg-gray-400"
               >
                 <Text className="text-white text-lg font-bold">
                   Reached Checkpoint
