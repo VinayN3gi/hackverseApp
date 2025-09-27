@@ -122,6 +122,7 @@ export default function DriverScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [cargoModalVisible, setCargoModalVisible] = useState(false);
 
   const [checkpoints, setCheckpoints] = useState([
     { name: "Depot", reached: true, time: "07:00 PM" },
@@ -131,6 +132,14 @@ export default function DriverScreen() {
   ]);
 
   const insets = useSafeAreaInsets();
+   const cargoInfo = `
+      Cargo ID: CARGO-8723
+      Description: Premium Petroleum Barrels
+      Weight: 12,500 kg
+      Destination: Petroleum Plant
+      Hazard Class: 3 – Flammable Liquids
+      Special Notes: Handle with care. Ensure seal verification at each checkpoint.
+        `;
 
   // Listen for keyboard show/hide
   useEffect(() => {
@@ -146,61 +155,87 @@ export default function DriverScreen() {
     };
   }, []);
 
-  const handleSendPrompt = async (prompt: string) => {
-    try {
-      setLoading(true);
+ const handleSendPrompt = async (prompt: string) => {
+  try {
+    setLoading(true);
 
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [
-            {
-              role: "system",
-              content: "You are a helpful AI assistant for a delivery driver.",
-            },
-            { role: "user", content: prompt },
-          ],
-        }),
-      });
+    // 1️⃣ Load existing chat history
+    const existingHistory = await AsyncStorage.getItem("chatHistory");
+    const parsedHistory = existingHistory ? JSON.parse(existingHistory) : [];
 
-      const data = await res.json();
-      const answer =
-        data.choices?.[0]?.message?.content || "No response received";
+    const previousMessages = parsedHistory.flatMap((m: any) => [
+      { role: "user", content: m.prompt },
+      { role: "assistant", content: m.answer },
+    ]);
 
-      // Save to state
-      setResponse(answer);
-      setModalVisible(true);
+    // 2️⃣ Add local data (cargo info + checkpoints) as context
+    const localData = `
+Cargo Information:
+${cargoInfo}
 
-      // Cache the conversation locally
-      const newMessage = {
-        id: Date.now(), // or uuid
-        prompt,
-        answer,
-        timestamp: new Date().toISOString(),
-      };
+Checkpoints:
+${checkpoints
+  .map(
+    (cp, idx) =>
+      `${idx + 1}. ${cp.name} - ${cp.reached ? "Reached" : "Pending"}${
+        cp.time ? ` at ${cp.time}` : ""
+      }`
+  )
+  .join("\n")}
+    `;
 
-      // get existing history
-      const existingHistory = await AsyncStorage.getItem("chatHistory");
-      const parsedHistory = existingHistory ? JSON.parse(existingHistory) : [];
+    // 3️⃣ Build full message set
+    const messages = [
+      {
+        role: "system",
+        content: `You are a helpful AI assistant for a delivery driver.
+You have access to the following locally stored information:
+${localData}
+Always use this context when answering questions.`,
+      },
+      ...previousMessages,
+      { role: "user", content: prompt },
+    ];
 
-      // add new message to history
-      const updatedHistory = [...parsedHistory, newMessage];
+    // 4️⃣ Call OpenAI API
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages,
+      }),
+    });
 
-      // store back
-      await AsyncStorage.setItem("chatHistory", JSON.stringify(updatedHistory));
-    } catch (error) {
-      console.error(error);
-      setResponse("Error fetching response");
-      setModalVisible(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const data = await res.json();
+    const answer =
+      data.choices?.[0]?.message?.content || "No response received";
+
+    // 5️⃣ Show in modal
+    setResponse(answer);
+    setModalVisible(true);
+
+    // 6️⃣ Save back into history
+    const newMessage = {
+      id: Date.now(),
+      prompt,
+      answer,
+      timestamp: new Date().toISOString(),
+    };
+    const updatedHistory = [...parsedHistory, newMessage];
+    await AsyncStorage.setItem("chatHistory", JSON.stringify(updatedHistory));
+  } catch (error) {
+    console.error(error);
+    setResponse("Error fetching response");
+    setModalVisible(true);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const sendNotif = async () => {
     let ngrokUrl = process.env.EXPO_PUBLIC_NGROK_URL;
@@ -249,6 +284,7 @@ export default function DriverScreen() {
 
             {/* Show only when keyboard is NOT visible */}
             {!isKeyboardVisible && (
+              <>
               <TouchableOpacity
                 onPress={sendNotif}
                 className="w-full bg-green-600 py-4 mb-6 rounded-2xl flex-row items-center justify-center shadow shadow-black/10 active:bg-green-700 disabled:bg-gray-400"
@@ -257,6 +293,18 @@ export default function DriverScreen() {
                   Reached Checkpoint
                 </Text>
               </TouchableOpacity>
+               <TouchableOpacity
+                  onPress={() => setCargoModalVisible(true)}
+                  className="w-full bg-yellow-600 py-4 mb-6 rounded-2xl flex-row items-center justify-center shadow shadow-black/10 active:bg-yellow-700"
+                >
+                  <Text className="text-white text-lg font-bold">
+                    Cargo Information
+                  </Text>
+                </TouchableOpacity>
+              
+              </>
+
+
             )}
 
             <View className="mt-auto mb-2">
@@ -288,6 +336,54 @@ export default function DriverScreen() {
           </View>
         </View>
       </Modal>
+
+     <Modal
+  visible={cargoModalVisible}
+  transparent
+  animationType="slide"
+  onRequestClose={() => setCargoModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.cargoBox}>
+      {/* Header */}
+      <View style={styles.cargoHeader}>
+        <Text style={styles.cargoTitle}>Cargo Information</Text>
+        <TouchableOpacity onPress={() => setCargoModalVisible(false)}>
+          <Text style={styles.cargoClose}>✕</Text>
+        </TouchableOpacity>
+      </View>
+        <ScrollView
+        style={styles.cargoScroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {cargoInfo
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .map((line, idx) => {
+            const [rawLabel, ...rest] = line.split(":");
+            const label = (rawLabel || "").trim();
+            const value = (rest.join(":") || "").trim();
+
+            return (
+              <View key={idx} style={styles.cargoRow}>
+                {/* both pieces are inside Text */}
+                <Text style={styles.cargoLabel}>{label}</Text>
+                <Text style={styles.cargoValue}>{value}</Text>
+              </View>
+            );
+          })}
+      </ScrollView>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => setCargoModalVisible(false)}
+      >
+        <Text style={styles.closeButtonText}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
     </SafeAreaView>
   );
 }
@@ -331,4 +427,73 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
+  cargoBox: {
+    backgroundColor: "#f9fafb",
+    borderRadius: 24,
+    padding: 20,
+    width: "100%",
+    maxHeight: "80%",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  cargoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  cargoTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1d4ed8",
+  },
+  cargoClose: {
+    fontSize: 24,
+    color: "#6b7280",
+    paddingHorizontal: 4,
+  },
+  cargoScroll: {
+    maxHeight: 300,
+    marginBottom: 12,
+  },
+  cargoItem: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  cargoText: {
+    fontSize: 16,
+    color: "#111827",
+    lineHeight: 22,
+  },
+  cargoRow: {
+  flexDirection: "row",
+  alignItems: "flex-start",
+  backgroundColor: "#ffffff",
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "#e5e7eb",
+  paddingVertical: 10,
+  paddingHorizontal: 12,
+  marginBottom: 8,
+},
+cargoLabel: {
+  width: 150,              // fixed width for perfect alignment
+  fontSize: 14,
+  color: "#6b7280",
+  fontWeight: "600",
+  paddingRight: 8,
+},
+cargoValue: {
+  flex: 1,                 // value wraps but stays aligned
+  fontSize: 16,
+  color: "#111827",
+  lineHeight: 22,
+},
 });
