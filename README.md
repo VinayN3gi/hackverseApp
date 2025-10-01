@@ -1,50 +1,68 @@
-# Welcome to your Expo app 👋
+# Driver Companion App (Mobile)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A **React Native + Firebase powered app** for truck drivers to manage cargo, update checkpoints, and raise safety alerts.  
+Seamlessly connected with the web dashboard, the app keeps logistics operations smooth and transparent.
 
-## Get started
+---
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+### Cargo Management
+- View assigned cargo information.
+- Check delivery details and instructions.
+- AI assistant for **cargo-related queries**.
 
-2. Start the app
+###  Checkpoint Tracking
+- Update status when reaching checkpoints (A → B → C).
+- Real-time sync with the web dashboard.
+- Offline support with **local caching** (updates synced when online).
 
-   ```bash
-   npx expo start
-   ```
+###  Safety Alerts
+- Raise safety concerns (equipment issues, road hazards, emergencies).
+- Alerts instantly visible on the dashboard.
+- Push notifications for urgent cases.
 
-In the output, you'll find options to open the app in a
+###  Driver AI Assistant
+- Local AI model for Q&A about cargo and routes.
+- Cached prompts for quick offline use.
+- Ask about cargo details without navigating menus.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Related Project: Website Dashboard
+This app is tightly integrated with the [**Logistics Intelligence Dashboard**](https://github.com/VinayN3gi/checkpoint.git).  
+The dashboard allows admins and managers to:
+- Upload data and build custom dashboards
+- Track driver progress and locations
+- Monitor safety concerns in real-time
+- Ask AI-powered questions on logistics data
 
-## Get a fresh project
+All driver updates made in this app are instantly visible in the dashboard.
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
-```
+## Screenshots
+![Home](assets/screenshots/image1.jpg)
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+![Cargo Info](assets/screenshots/iimage23.jpg)
 
-## Learn more
+![Chat](assets/screenshots/image21.jpg)
 
-To learn more about developing your project with Expo, look at the following resources:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+![Safety Alert](assets/screenshots/image2.jpg)
 
-## Join the community
+![Safety Chat](assets/screenshots/image3.jpg)
 
-Join our community of developers creating universal apps.
+![Prompt History](assets/screenshots/image4.jpg)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+![Prompt Modal](assets/screenshots/image5.jpg)
+
+
+---
+
+## Tech Stack
+- **Framework:** React Native (Expo / bare workflow supported)
+- **Backend:** Firebase (Auth, Firestore, Notifications)
+- **AI:** Local model + caching for prompts
+- **Navigation:** React Navigation
+- **UI:** TailwindCSS (NativeWind)
